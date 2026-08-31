@@ -1,4 +1,4 @@
-name: Build iOS
+name: Build iOS IPA
 
 on:
   workflow_dispatch:
@@ -33,29 +33,26 @@ jobs:
       - name: Get dependencies
         run: flutter pub get
 
-      - name: Build iOS
-        run: flutter build ios --release --no-codesign
+      - name: Build iOS IPA
+        run: flutter build ipa --release --no-codesign
 
-      - name: Verify iOS build
+      - name: Verify IPA
         run: |
-          echo "Checking iOS build..."
-          ls -lh build/ios/iphoneos/
-          test -d build/ios/iphoneos/Runner.app
-          echo "Runner.app FOUND"
+          echo "Checking generated IPA..."
+          ls -lh build/ios/ipa/
 
-      - name: Create ZIP
-        run: |
-          zip -r CareerPath-iOS.zip build/ios/iphoneos/Runner.app
+          IPA_FILE=$(find build/ios/ipa -name "*.ipa" -type f | head -n 1)
 
-      - name: Verify ZIP
-        run: |
-          echo "Checking ZIP..."
-          ls -lh CareerPath-iOS.zip
-          test -f CareerPath-iOS.zip
-          echo "CareerPath-iOS.zip FOUND"
+          if [ -z "$IPA_FILE" ]; then
+            echo "ERROR: No IPA file found"
+            exit 1
+          fi
 
-      - name: Upload iOS build
+          echo "IPA FOUND:"
+          echo "$IPA_FILE"
+
+      - name: Upload IPA
         uses: actions/upload-artifact@v4
         with:
-          name: CareerPath-iOS
-          path: CareerPath-iOS.zip
+          name: CareerPath-iOS-IPA
+          path: build/ios/ipa/*.ipa
