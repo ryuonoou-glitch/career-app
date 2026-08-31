@@ -22,6 +22,7 @@ jobs:
           pwd
           echo "Checking Flutter project:"
           ls -la
+
           if [ -f "pubspec.yaml" ]; then
             echo "pubspec.yaml FOUND"
           else
@@ -35,13 +36,26 @@ jobs:
       - name: Build iOS
         run: flutter build ios --release --no-codesign
 
+      - name: Verify iOS build
+        run: |
+          echo "Checking iOS build..."
+          ls -lh build/ios/iphoneos/
+          test -d build/ios/iphoneos/Runner.app
+          echo "Runner.app FOUND"
+
       - name: Create ZIP
-        run: |  
-          cd build/ios/iphoneos
-          zip -r ../../CareerPath-iOS.zip Runner.app
-          
+        run: |
+          zip -r CareerPath-iOS.zip build/ios/iphoneos/Runner.app
+
+      - name: Verify ZIP
+        run: |
+          echo "Checking ZIP..."
+          ls -lh CareerPath-iOS.zip
+          test -f CareerPath-iOS.zip
+          echo "CareerPath-iOS.zip FOUND"
+
       - name: Upload iOS build
         uses: actions/upload-artifact@v4
         with:
           name: CareerPath-iOS
-          path: build/CareerPath-iOS.zip
+          path: CareerPath-iOS.zip
