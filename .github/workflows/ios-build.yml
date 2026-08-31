@@ -16,6 +16,15 @@ jobs:
         with:
           channel: stable
 
+      - name: Verify Flutter project
+        run: |
+          echo "Current directory:"
+          pwd
+          echo "Files:"
+          ls -la
+          echo "Checking pubspec.yaml:"
+          test -f pubspec.yaml && echo "pubspec.yaml FOUND" || echo "pubspec.yaml NOT FOUND"
+
       - name: Get dependencies
         run: flutter pub get
 
