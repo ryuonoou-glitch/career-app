@@ -20,10 +20,14 @@ jobs:
         run: |
           echo "Current directory:"
           pwd
-          echo "Files:"
+          echo "Checking Flutter project:"
           ls -la
-          echo "Checking pubspec.yaml:"
-          test -f pubspec.yaml && echo "pubspec.yaml FOUND" || echo "pubspec.yaml NOT FOUND"
+          if [ -f "pubspec.yaml" ]; then
+            echo "pubspec.yaml FOUND"
+          else
+            echo "ERROR: pubspec.yaml NOT FOUND"
+            exit 1
+          fi
 
       - name: Get dependencies
         run: flutter pub get
