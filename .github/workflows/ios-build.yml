@@ -33,26 +33,32 @@ jobs:
       - name: Get dependencies
         run: flutter pub get
 
-      - name: Build iOS IPA
-        run: flutter build ipa --release --no-codesign
+      - name: Build iOS
+        run: flutter build ios --release --no-codesign
+
+      - name: Verify iOS build
+        run: |
+          echo "Checking iOS build..."
+          ls -lh build/ios/iphoneos/
+          test -d build/ios/iphoneos/Runner.app
+          echo "Runner.app FOUND"
+
+      - name: Create IPA
+        run: |
+          mkdir -p Payload
+          cp -R build/ios/iphoneos/Runner.app Payload/Runner.app
+          zip -r CareerPath.ipa Payload
+          rm -rf Payload
 
       - name: Verify IPA
         run: |
           echo "Checking generated IPA..."
-          ls -lh build/ios/ipa/
-
-          IPA_FILE=$(find build/ios/ipa -name "*.ipa" -type f | head -n 1)
-
-          if [ -z "$IPA_FILE" ]; then
-            echo "ERROR: No IPA file found"
-            exit 1
-          fi
-
-          echo "IPA FOUND:"
-          echo "$IPA_FILE"
+          ls -lh CareerPath.ipa
+          test -f CareerPath.ipa
+          echo "CareerPath.ipa FOUND"
 
       - name: Upload IPA
         uses: actions/upload-artifact@v4
         with:
           name: CareerPath-iOS-IPA
-          path: build/ios/ipa/*.ipa
+          path: CareerPath.ipa
