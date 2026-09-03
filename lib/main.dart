@@ -2,7 +2,6 @@ import 'dart:async';
 import 'dart:io' show Platform, InternetAddress, SocketException, Socket;
 
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -315,15 +314,6 @@ class _MainAppScreenState extends State<MainAppScreen> {
     await _controller?.loadUrl(urlRequest: URLRequest(url: WebUri.uri(_startUrl)));
   }
 
-  void _exitApp() {
-    if (Platform.isAndroid) {
-      // Gracefully returns to the home screen instead of hard-killing
-      // the process (exit(0) can leave native resources in a bad state).
-      SystemNavigator.pop();
-    }
-    // iOS: intentionally not handled here — see _buildActions().
-  }
-
   @override
   Widget build(BuildContext context) {
     return ValueListenableBuilder<bool>(
@@ -385,25 +375,10 @@ class _MainAppScreenState extends State<MainAppScreen> {
               );
             },
           ),
-          actions: _buildActions(),
         ),
         body: _mainFrameLoadFailed ? _buildRetryView() : _buildWebView(),
       ),
     );
-  }
-
-  List<Widget> _buildActions() {
-    // Programmatic app-quit isn't really a thing on iOS (Apple
-    // discourages it and Navigator.pop() on the root route is a
-    // silent no-op there), so there's no point showing a button that
-    // does nothing. Android keeps the real exit action.
-    if (!Platform.isAndroid) return const [];
-    return [
-      IconButton(
-        icon: const Icon(Icons.exit_to_app),
-        onPressed: _showExitDialog,
-      ),
-    ];
   }
 
   Widget _buildWebView() {
@@ -438,6 +413,11 @@ class _MainAppScreenState extends State<MainAppScreen> {
           return NavigationActionPolicy.ALLOW;
         }
 
+        // Allow iframes and other subframe navigations (e.g., chatbots)
+        if (!navigationAction.isForMainFrame) {
+          return NavigationActionPolicy.ALLOW;
+        }
+
         // Anything off-domain (a link on the login page, etc.) opens
         // in the device's browser instead of loading inside our
         // WebView, so the app can't be used to spoof arbitrary sites.
@@ -459,6 +439,18 @@ class _MainAppScreenState extends State<MainAppScreen> {
         if (!mounted) return;
         _isLoading.value = false;
         _canGoBack.value = canGoBack;
+
+        // The website's animated background glows use `filter: blur(120px)` which is 
+        // extremely heavy on mobile GPUs. When the keyboard opens and the user types,
+        // the constant repaints cause extreme lag. We inject CSS here to disable them.
+        await controller.evaluateJavascript(source: """
+          if (!document.getElementById('flutter-perf-fix')) {
+            var style = document.createElement('style');
+            style.id = 'flutter-perf-fix';
+            style.innerHTML = '.ambient-glow { display: none !important; animation: none !important; filter: none !important; }';
+            document.head.appendChild(style);
+          }
+        """);
       },
       onReceivedError: (controller, request, error) {
         _onError(error.description, isMainFrame: request.isForMainFrame ?? true);
@@ -508,30 +500,6 @@ class _MainAppScreenState extends State<MainAppScreen> {
             ],
           ),
         ),
-      ),
-    );
-  }
-
-  void _showExitDialog() {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Exit App'),
-        content: const Text('Are you sure you want to exit?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('CANCEL'),
-          ),
-          TextButton(
-            onPressed: () {
-              Navigator.pop(context);
-              _exitApp();
-            },
-            style: TextButton.styleFrom(foregroundColor: Colors.red),
-            child: const Text('EXIT'),
-          ),
-        ],
       ),
     );
   }

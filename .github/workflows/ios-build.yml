@@ -20,6 +20,15 @@ jobs:
         run: |
           echo "Current directory:"
           pwd
+          echo "Files:"
+          ls -la
+          echo "Checking pubspec.yaml:"
+          test -f pubspec.yaml && echo "pubspec.yaml FOUND" || echo "pubspec.yaml NOT FOUND"
+
+      - name: Verify Flutter project
+        run: |
+          echo "Current directory:"
+          pwd
           echo "Checking Flutter project:"
           ls -la
 
@@ -57,7 +66,13 @@ jobs:
           test -f CareerPath.ipa
           echo "CareerPath.ipa FOUND"
 
-      - name: Upload IPA
+      - name: Upload iOS App (ZIP)
+        uses: actions/upload-artifact@v4
+        with:
+          name: CareerPath-iOS
+          path: build/CareerPath-iOS.zip
+
+      - name: Upload iOS App (IPA)
         uses: actions/upload-artifact@v4
         with:
           name: CareerPath-iOS-IPA
